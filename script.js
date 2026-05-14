@@ -1,81 +1,64 @@
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+const sound = document.getElementById("sound");
 
 let clonesTriggered = false;
 let cloneStartTime = null;
 let mask = null;
 
+// Set sound source (using Junsu.mp3 from parent folder)
+sound.src = "../Junsu.mp3";
+
 // ----------------------
-// Trained gesture model
+// Gesture detection (hand distance-based)
 // ----------------------
-let gestureModel = null;
+// Simple gesture: detect hands close together
+function predictGesture(right, left, threshold = 0.15) {
+  if (!right || !left) return false;
 
-async function loadGestureModel() {
-  try {
-    gestureModel = await tf.loadLayersModel("gesture-model.json");
-    console.log("Gesture model loaded");
-  } catch (e) {
-    console.error("Failed to load gesture model:", e);
-  }
-}
-
-function normalizeHand(lm) {
-  const w = lm[0];
-  const mcp = lm[9];
-  const scale =
-    Math.sqrt(
-      (mcp.x - w.x) ** 2 + (mcp.y - w.y) ** 2 + (mcp.z - w.z) ** 2
-    ) || 1;
-
-  const out = [];
-  for (let i = 0; i < 21; i++) {
-    out.push((lm[i].x - w.x) / scale);
-    out.push((lm[i].y - w.y) / scale);
-    out.push((lm[i].z - w.z) / scale);
-  }
-  return out;
-}
-
-//change the threshold number to your preferance! 
-function predictGesture(right, left, threshold = 0.999) {
-  if (!gestureModel || !right || !left) return false;
-
-  const input = tf.tensor2d([
-    [...normalizeHand(right), ...normalizeHand(left)],
-  ]);
-  const prob = gestureModel.predict(input).dataSync()[0];
-  input.dispose();
+  const distance = Math.sqrt(
+    (right[8].x - left[8].x) ** 2 +
+    (right[8].y - left[8].y) ** 2 +
+    (right[8].z - left[8].z) ** 2
+  );
 
   const confidenceEl = document.querySelector(".confidence");
-  if (confidenceEl) confidenceEl.textContent = (prob * 100).toFixed(1) + "%";
+  if (confidenceEl) confidenceEl.textContent = ((1 - distance) * 100).toFixed(1) + "%";
 
-  return prob > threshold;
+  return distance < threshold;
 }
 
-loadGestureModel();
-
 // ----------------------
-// Custom clones
+// Custom clones - Circular layout for beautiful positioning
 // ----------------------
-//feel free to play around with the clone positions, sizes, and delay time
 const customClones = [
-  { x: -100, y: 100, scale: 0.9,  delay: 1000, smokeSpawned: false },
-  { x:  120, y: 100, scale: 0.85, delay: 1150, smokeSpawned: false },
-  { x: -180, y: 140, scale: 0.8,  delay: 1300, smokeSpawned: false },
-  { x: -140, y: 140, scale: 0.45, delay: 1320, smokeSpawned: false },
-  { x:  180, y: 160, scale: 0.7,  delay: 1450, smokeSpawned: false },
-  { x:  140, y: 160, scale: 0.4,  delay: 1470, smokeSpawned: false },
-  { x: -250, y: 140, scale: 0.7,  delay: 1600, smokeSpawned: false },
-  { x: -220, y: 140, scale: 0.35, delay: 1620, smokeSpawned: false },
-  { x:  260, y: 160, scale: 0.65, delay: 1750, smokeSpawned: false },
-  { x: -100, y: 150, scale: 0.6,  delay: 2500, smokeSpawned: false },
-  { x:  100, y: 150, scale: 0.6,  delay: 2650, smokeSpawned: false },
-  { x: -120, y:  70, scale: 0.55, delay: 2800, smokeSpawned: false },
-  { x:  100, y:  70, scale: 0.5,  delay: 2950, smokeSpawned: false },
-  { x: -200, y:  85, scale: 0.55, delay: 3100, smokeSpawned: false },
-  { x:  230, y:  85, scale: 0.5,  delay: 3250, smokeSpawned: false },
-  { x: -280, y: 100, scale: 0.4,  delay: 3400, smokeSpawned: false },
+  // Center/main position
+  { x: 0, y: 0, scale: 1, delay: 800, smokeSpawned: false },
+  
+  // First ring - close around
+  { x: -120, y: -80, scale: 0.85, delay: 1000, smokeSpawned: false },
+  { x: 120, y: -80, scale: 0.85, delay: 1100, smokeSpawned: false },
+  { x: -140, y: 60, scale: 0.8, delay: 1200, smokeSpawned: false },
+  { x: 140, y: 60, scale: 0.8, delay: 1300, smokeSpawned: false },
+  
+  // Second ring - medium distance
+  { x: -200, y: -120, scale: 0.7, delay: 1400, smokeSpawned: false },
+  { x: 200, y: -120, scale: 0.7, delay: 1500, smokeSpawned: false },
+  { x: -220, y: 100, scale: 0.7, delay: 1600, smokeSpawned: false },
+  { x: 220, y: 100, scale: 0.7, delay: 1700, smokeSpawned: false },
+  
+  // Third ring - far distance
+  { x: -280, y: -60, scale: 0.6, delay: 1800, smokeSpawned: false },
+  { x: 280, y: -60, scale: 0.6, delay: 1900, smokeSpawned: false },
+  { x: -300, y: 140, scale: 0.6, delay: 2000, smokeSpawned: false },
+  { x: 300, y: 140, scale: 0.6, delay: 2100, smokeSpawned: false },
+  
+  // Additional clones for density
+  { x: -160, y: -160, scale: 0.55, delay: 2200, smokeSpawned: false },
+  { x: 160, y: -160, scale: 0.55, delay: 2300, smokeSpawned: false },
+  { x: 0, y: -200, scale: 0.5, delay: 2400, smokeSpawned: false },
+  { x: -120, y: 150, scale: 0.55, delay: 2500, smokeSpawned: false },
 ];
 
 // ----------------------
@@ -92,8 +75,7 @@ selfie.onResults((r) => (mask = r.segmentationMask));
 // Holistic
 // ----------------------
 const holistic = new Holistic({
-  locateFile: (f) =>
-    `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${f}`,
+  locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${f}`,
 });
 holistic.setOptions({
   modelComplexity: 1,
@@ -173,12 +155,18 @@ holistic.onResults((res) => {
 
   const person = grabPerson();
 
-  // Trigger clones once via trained model
-  if (!clonesTriggered && gestureModel) {
+  // Trigger clones when hands are close together
+  if (!clonesTriggered) {
     if (predictGesture(res.rightHandLandmarks, res.leftHandLandmarks)) {
       clonesTriggered = true;
       cloneStartTime = performance.now();
       console.log("CLONE TRIGGERED");
+      
+      // Play sound
+      if (sound && sound.src) {
+        sound.currentTime = 0;
+        sound.play().catch(e => console.log("Sound play blocked:", e));
+      }
     }
   }
 
@@ -216,7 +204,7 @@ function drawClones(person) {
   sorted.forEach((cl) => {
     if (now - cloneStartTime >= cl.delay) {
       ctx.save();
-      ctx.translate(cl.x + canvas.width * (1 - cl.scale) / 2, cl.y);
+      ctx.translate(cl.x + (canvas.width * (1 - cl.scale)) / 2, cl.y);
       ctx.scale(cl.scale, cl.scale);
       ctx.drawImage(person, 0, 0);
       ctx.restore();
@@ -247,11 +235,11 @@ function grabPerson() {
 // finger skeelton
 // ----------------------
 const FINGER_INDICES = {
-  thumb:  [0, 1, 2, 3, 4],
-  index:  [0, 5, 6, 7, 8],
+  thumb: [0, 1, 2, 3, 4],
+  index: [0, 5, 6, 7, 8],
   middle: [0, 9, 10, 11, 12],
-  ring:   [0, 13, 14, 15, 16],
-  pinky:  [0, 17, 18, 19, 20],
+  ring: [0, 13, 14, 15, 16],
+  pinky: [0, 17, 18, 19, 20],
 };
 
 function drawFingerSkeleton(lm) {
@@ -271,13 +259,7 @@ function drawFingerSkeleton(lm) {
 
   lm.forEach((point) => {
     ctx.beginPath();
-    ctx.arc(
-      point.x * canvas.width,
-      point.y * canvas.height,
-      3,
-      0,
-      Math.PI * 2
-    );
+    ctx.arc(point.x * canvas.width, point.y * canvas.height, 3, 0, Math.PI * 2);
     ctx.fillStyle = "red";
     ctx.fill();
   });
@@ -300,9 +282,48 @@ function toggleImage() {
 }
 
 // ----------------------
-// Reset everything on load 
+// Reset everything on load
 // ----------------------
 window.onload = () => {
   clonesTriggered = false;
   cloneStartTime = null;
 };
+
+// ----------------------
+// Backup: Click/Touch to trigger clones
+// ----------------------
+canvas.addEventListener("click", () => {
+  if (!clonesTriggered) {
+    clonesTriggered = true;
+    cloneStartTime = performance.now();
+    console.log("CLONE TRIGGERED (via click)");
+    
+    // Play sound
+    if (sound && sound.src) {
+      sound.currentTime = 0;
+      sound.play().catch(e => console.log("Sound play blocked:", e));
+    }
+  }
+});
+
+canvas.addEventListener("touchstart", () => {
+  if (!clonesTriggered) {
+    clonesTriggered = true;
+    cloneStartTime = performance.now();
+    console.log("CLONE TRIGGERED (via touch)");
+    
+    // Play sound
+    if (sound && sound.src) {
+      sound.currentTime = 0;
+      sound.play().catch(e => console.log("Sound play blocked:", e));
+    }
+  }
+});
+
+// Double-click to reset
+canvas.addEventListener("dblclick", () => {
+  clonesTriggered = false;
+  cloneStartTime = null;
+  customClones.forEach(cl => cl.smokeSpawned = false);
+  console.log("CLONES RESET");
+});
