@@ -6,8 +6,10 @@
 
 body {
   font-family: Arial, sans-serif;
-  background: linear-gradient(135deg, #0a0e27 0%, #1a0033 50%, #0a0e27 100%);
-  min-height: 100vh;
+  background-image:url('assets/posters-naruto-shippuden-konoha-ninjas-poster-102360-31271131906101.jpg');
+  background-size: cover;
+  background-position: center;
+  max-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
