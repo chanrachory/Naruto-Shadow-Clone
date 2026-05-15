@@ -6,7 +6,7 @@
 
 body {
   font-family: Arial, sans-serif;
-  background-image:url('assets/wp14401780.jpg');
+  background-image: url("assets/wp14401780.jpg");
   background-size: cover;
   background-position: center;
   max-height: 100vh;
@@ -20,15 +20,23 @@ body {
 
 /* Animated background effect */
 body::before {
-  content: '';
+  content: "";
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: 
-    radial-gradient(circle at 20% 50%, rgba(255, 0, 128, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(0, 255, 200, 0.15) 0%, transparent 50%);
+  background:
+    radial-gradient(
+      circle at 20% 50%,
+      rgba(255, 0, 128, 0.15) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(0, 255, 200, 0.15) 0%,
+      transparent 50%
+    );
   pointer-events: none;
   z-index: -1;
 }
@@ -47,7 +55,7 @@ body::before {
   gap: 1rem;
   border: 2px solid rgba(0, 255, 255, 0.3);
   border-radius: 15px;
-  box-shadow: 
+  box-shadow:
     0 0 30px rgba(255, 0, 128, 0.3),
     0 0 60px rgba(0, 255, 200, 0.2),
     inset 0 0 30px rgba(0, 255, 255, 0.05);
@@ -58,7 +66,9 @@ h1 {
   font-weight: bold;
   color: white;
   text-align: center;
-  text-shadow: 0 0 10px rgba(255, 0, 128, 0.6), 0 0 20px rgba(0, 255, 200, 0.4);
+  text-shadow:
+    0 0 10px rgba(255, 0, 128, 0.6),
+    0 0 20px rgba(0, 255, 200, 0.4);
   letter-spacing: 2px;
 }
 
@@ -74,8 +84,13 @@ h1 {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .error {
@@ -87,11 +102,15 @@ h1 {
 
 .video-container {
   position: relative;
-  background: radial-gradient(circle, rgba(0, 0, 0, 0.8) 0%, rgba(10, 14, 39, 0.9) 100%);
+  background: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(10, 14, 39, 0.9) 100%
+  );
   overflow: hidden;
   border-radius: 10px;
   border: 2px solid rgba(0, 255, 200, 0.4);
-  box-shadow: 
+  box-shadow:
     inset 0 0 20px rgba(0, 255, 255, 0.2),
     0 0 20px rgba(255, 0, 128, 0.3);
 }
@@ -104,6 +123,69 @@ h1 {
   width: 100%;
   height: auto;
   display: block;
+  max-height: 80vh;
+}
+
+@media (max-width: 900px) {
+  body {
+    padding: 0.75rem;
+  }
+
+  .container {
+    max-width: 44rem;
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  .video-overlay-btn {
+    bottom: 16px;
+  }
+
+  .video-overlay-btn img {
+    width: 100px;
+  }
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 0.5rem;
+  }
+
+  .container {
+    max-width: 100%;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .confidence-container {
+    font-size: 0.95rem;
+    padding: 0.4rem;
+  }
+
+  .video-overlay-btn {
+    bottom: 12px;
+  }
+
+  .video-overlay-btn img {
+    width: 80px;
+  }
+
+  .info-text,
+  .console-text {
+    font-size: 0.8rem;
+  }
 }
 
 /* Overlay button */

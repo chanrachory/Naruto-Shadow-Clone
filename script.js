@@ -6,6 +6,7 @@ const sound = document.getElementById("sound");
 let clonesTriggered = false;
 let cloneStartTime = null;
 let mask = null;
+let gestureLocked = false;
 
 // Set sound source (using Junsu.mp3 from parent folder)
 sound.src = "../Junsu.mp3";
@@ -19,12 +20,13 @@ function predictGesture(right, left, threshold = 0.15) {
 
   const distance = Math.sqrt(
     (right[8].x - left[8].x) ** 2 +
-    (right[8].y - left[8].y) ** 2 +
-    (right[8].z - left[8].z) ** 2
+      (right[8].y - left[8].y) ** 2 +
+      (right[8].z - left[8].z) ** 2,
   );
 
   const confidenceEl = document.querySelector(".confidence");
-  if (confidenceEl) confidenceEl.textContent = ((1 - distance) * 100).toFixed(1) + "%";
+  if (confidenceEl)
+    confidenceEl.textContent = ((1 - distance) * 100).toFixed(1) + "%";
 
   return distance < threshold;
 }
@@ -35,25 +37,25 @@ function predictGesture(right, left, threshold = 0.15) {
 const customClones = [
   // Center/main position
   { x: 0, y: 0, scale: 1, delay: 800, smokeSpawned: false },
-  
+
   // First ring - close around
   { x: -120, y: -80, scale: 0.85, delay: 1000, smokeSpawned: false },
   { x: 120, y: -80, scale: 0.85, delay: 1100, smokeSpawned: false },
   { x: -140, y: 60, scale: 0.8, delay: 1200, smokeSpawned: false },
   { x: 140, y: 60, scale: 0.8, delay: 1300, smokeSpawned: false },
-  
+
   // Second ring - medium distance
   { x: -200, y: -120, scale: 0.7, delay: 1400, smokeSpawned: false },
   { x: 200, y: -120, scale: 0.7, delay: 1500, smokeSpawned: false },
   { x: -220, y: 100, scale: 0.7, delay: 1600, smokeSpawned: false },
   { x: 220, y: 100, scale: 0.7, delay: 1700, smokeSpawned: false },
-  
+
   // Third ring - far distance
   { x: -280, y: -60, scale: 0.6, delay: 1800, smokeSpawned: false },
   { x: 280, y: -60, scale: 0.6, delay: 1900, smokeSpawned: false },
   { x: -300, y: 140, scale: 0.6, delay: 2000, smokeSpawned: false },
   { x: 300, y: 140, scale: 0.6, delay: 2100, smokeSpawned: false },
-  
+
   // Additional clones for density
   { x: -160, y: -160, scale: 0.55, delay: 2200, smokeSpawned: false },
   { x: 160, y: -160, scale: 0.55, delay: 2300, smokeSpawned: false },
@@ -154,20 +156,20 @@ holistic.onResults((res) => {
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
   const person = grabPerson();
+  const isCloseGesture = predictGesture(
+    res.rightHandLandmarks,
+    res.leftHandLandmarks,
+  );
 
-  // Trigger clones when hands are close together
-  if (!clonesTriggered) {
-    if (predictGesture(res.rightHandLandmarks, res.leftHandLandmarks)) {
-      clonesTriggered = true;
-      cloneStartTime = performance.now();
-      console.log("CLONE TRIGGERED");
-      
-      // Play sound
-      if (sound && sound.src) {
-        sound.currentTime = 0;
-        sound.play().catch(e => console.log("Sound play blocked:", e));
-      }
+  if (isCloseGesture && !gestureLocked) {
+    gestureLocked = true;
+    if (!clonesTriggered) {
+      startClones();
+    } else {
+      resetClones();
     }
+  } else if (!isCloseGesture) {
+    gestureLocked = false;
   }
 
   // Spawn smoke independently for each clone
@@ -268,17 +270,49 @@ function drawFingerSkeleton(lm) {
 // ----------------------
 // Hand image toggle
 // ----------------------
-function toggleImage() {
+function setOverlayState(state) {
   const img = document.getElementById("overlayImg");
   const btn = img.closest(".video-overlay-btn");
 
-  if (img.dataset.state === "2") return;
+  if (img.dataset.state === state) return;
 
-  img.src = "assets/state-2.png";
-  img.dataset.state = "2";
+  img.dataset.state = state;
+  img.src = state === "2" ? "assets/state-2.png" : "assets/state-1.png";
 
-  btn.classList.add("pop");
-  setTimeout(() => btn.classList.remove("pop"), 200);
+  if (state === "2") {
+    btn.classList.add("pop");
+    setTimeout(() => btn.classList.remove("pop"), 200);
+  }
+}
+
+function toggleImage() {
+  setOverlayState("2");
+}
+
+function startClones() {
+  clonesTriggered = true;
+  cloneStartTime = performance.now();
+  customClones.forEach((cl) => (cl.smokeSpawned = false));
+  activeSmokes.length = 0;
+  console.log("CLONE TRIGGERED");
+  playSound();
+  setOverlayState("2");
+}
+
+function resetClones() {
+  clonesTriggered = false;
+  cloneStartTime = null;
+  customClones.forEach((cl) => (cl.smokeSpawned = false));
+  activeSmokes.length = 0;
+  console.log("CLONES RESET");
+  setOverlayState("1");
+}
+
+function playSound() {
+  if (sound && sound.src) {
+    sound.currentTime = 0;
+    sound.play().catch((e) => console.log("Sound play blocked:", e));
+  }
 }
 
 // ----------------------
@@ -294,36 +328,17 @@ window.onload = () => {
 // ----------------------
 canvas.addEventListener("click", () => {
   if (!clonesTriggered) {
-    clonesTriggered = true;
-    cloneStartTime = performance.now();
-    console.log("CLONE TRIGGERED (via click)");
-    
-    // Play sound
-    if (sound && sound.src) {
-      sound.currentTime = 0;
-      sound.play().catch(e => console.log("Sound play blocked:", e));
-    }
+    startClones();
   }
 });
 
 canvas.addEventListener("touchstart", () => {
   if (!clonesTriggered) {
-    clonesTriggered = true;
-    cloneStartTime = performance.now();
-    console.log("CLONE TRIGGERED (via touch)");
-    
-    // Play sound
-    if (sound && sound.src) {
-      sound.currentTime = 0;
-      sound.play().catch(e => console.log("Sound play blocked:", e));
-    }
+    startClones();
   }
 });
 
 // Double-click to reset
 canvas.addEventListener("dblclick", () => {
-  clonesTriggered = false;
-  cloneStartTime = null;
-  customClones.forEach(cl => cl.smokeSpawned = false);
-  console.log("CLONES RESET");
+  resetClones();
 });
